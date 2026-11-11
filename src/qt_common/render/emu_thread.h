@@ -59,6 +59,22 @@ public:
     }
 
     /**
+     * Resumes the emulation for exactly one presented frame, then pauses again.
+     * Call this only while the emulation is paused (IsRunning() == false).
+     * @warning Does nothing if the emulation is already running.
+     */
+    void StepFrame() {
+        std::unique_lock run_lk{m_should_run_mutex};
+        if (m_should_run) {
+            // Already running; nothing to step.
+            return;
+        }
+        m_step_frame = true;
+        m_should_run = true;
+        m_should_run_cv.notify_one();
+    }
+
+    /**
      * Requests for the emulation thread to immediately stop running
      */
     void ForceStop() {
@@ -86,6 +102,7 @@ private:
     std::condition_variable_any m_should_run_cv;
     Common::Event m_stopped;
     bool m_should_run{true};
+    bool m_step_frame{false};
     std::optional<u64> m_pending_shader_cache_title;
 
 signals:

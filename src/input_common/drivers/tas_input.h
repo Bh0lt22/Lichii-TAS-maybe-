@@ -126,14 +126,51 @@ public:
      */
     std::tuple<TasState, size_t, std::array<size_t, PLAYER_NUMBER>> GetStatus() const;
 
-private:
-    enum class TasAxis : u8;
-
     struct TASCommand {
         u64 buttons{};
         TasAnalog l_axis{};
         TasAnalog r_axis{};
     };
+
+    // --- TAS Input Panel support ---
+
+    /**
+     * Enables or disables manual input mode.
+     * While enabled, UpdateThread keeps the manual input applied to player 1 and
+     * neither clears the input state nor advances loaded scripts.
+     * When recording is active in manual mode, the manual input is recorded
+     * frame by frame instead of the physical controller input.
+     */
+    void SetManualMode(bool enabled);
+
+    /// Returns true if manual input mode is currently active
+    bool GetManualMode() const;
+
+    /**
+     * Sets the state of a single button of the manual input (player 1)
+     * @param button Bit index of the button (see TasButton)
+     * @param value  New state of the button
+     */
+    void ManualSetButton(int button, bool value);
+
+    /**
+     * Sets a single axis of the manual input (player 1)
+     * @param axis  0 = left X, 1 = left Y, 2 = right X, 3 = right Y
+     * @param value Axis value from -1.0f to 1.0f
+     */
+    void ManualSetAxis(int axis, f32 value);
+
+    /// Returns the last input sampled from the physical controller (for display)
+    TASCommand GetLastInput() const;
+
+    /// Returns the current manual input (for display)
+    TASCommand GetManualInput() const;
+
+private:
+    enum class TasAxis : u8;
+
+    /// Writes the current manual input into the input engine (player 1)
+    void ApplyManualInput();
 
     /// Loads TAS files from all players
     void LoadTasFiles();
@@ -192,9 +229,11 @@ private:
     bool is_recording{false};
     bool is_running{false};
     bool needs_reset{false};
+    bool manual_mode{false};
     std::array<std::vector<TASCommand>, PLAYER_NUMBER> commands{};
     std::vector<TASCommand> record_commands{};
     size_t current_command{0};
     TASCommand last_input{}; // only used for recording
+    TASCommand manual_input{}; // manual input of player 1 (TAS Input Panel)
 };
 } // namespace InputCommon::TasInput

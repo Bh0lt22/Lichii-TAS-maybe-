@@ -188,6 +188,16 @@ void Tas::UpdateThread() {
         return;
     }
 
+    if (manual_mode) {
+        // Manual mode: keep the manual input applied, don't clear the input state
+        // and don't advance loaded scripts. If recording is active, the manual input
+        // is recorded frame by frame (used with frame advance to craft inputs).
+        if (is_recording) {
+            record_commands.push_back(manual_input);
+        }
+        return;
+    }
+
     if (is_recording) {
         record_commands.push_back(last_input);
     }
@@ -342,6 +352,94 @@ void Tas::SaveRecording(bool overwrite_file) {
     }
     needs_reset = true;
     record_commands.clear();
+}
+
+void Tas::SetManualMode(bool enabled) {
+    if (manual_mode == enabled) {
+        return;
+    }
+    manual_mode = enabled;
+    if (enabled) {
+        // Make sure the engine reflects the current manual input
+        ApplyManualInput();
+    } else {
+        ClearInput();
+    }
+}
+
+bool Tas::GetManualMode() const {
+    return manual_mode;
+}
+
+void Tas::ManualSetButton(int button, bool value) {
+    if (button < 0 || button >= static_cast<int>(sizeof(u64) * 8)) {
+        return;
+    }
+    const u64 mask = 1ULL << button;
+    if (value) {
+        manual_input.buttons |= mask;
+    } else {
+        manual_input.buttons &= ~mask;
+    }
+    if (manual_mode) {
+        const PadIdentifier identifier{
+            .guid = Common::UUID{},
+            .port = 0,
+            .pad = 0,
+        };
+        SetButton(identifier, button, value);
+    }
+}
+
+void Tas::ManualSetAxis(int axis, f32 value) {
+    switch (axis) {
+    case 0:
+        manual_input.l_axis.x = value;
+        break;
+    case 1:
+        manual_input.l_axis.y = value;
+        break;
+    case 2:
+        manual_input.r_axis.x = value;
+        break;
+    case 3:
+        manual_input.r_axis.y = value;
+        break;
+    default:
+        return;
+    }
+    if (manual_mode) {
+        const PadIdentifier identifier{
+            .guid = Common::UUID{},
+            .port = 0,
+            .pad = 0,
+        };
+        SetAxis(identifier, axis, value);
+    }
+}
+
+Tas::TASCommand Tas::GetLastInput() const {
+    return last_input;
+}
+
+Tas::TASCommand Tas::GetManualInput() const {
+    return manual_input;
+}
+
+void Tas::ApplyManualInput() {
+    const PadIdentifier identifier{
+        .guid = Common::UUID{},
+        .port = 0,
+        .pad = 0,
+    };
+    for (std::size_t i = 0; i < sizeof(manual_input.buttons) * 8; ++i) {
+        const bool button_status = (manual_input.buttons & (1LLU << i)) != 0;
+        SetButton(identifier, static_cast<int>(i), button_status);
+    }
+    SetAxis(identifier, 0, manual_input.l_axis.x);
+    SetAxis(identifier, 1, manual_input.l_axis.y);
+    SetAxis(identifier, 2, manual_input.r_axis.x);
+    SetAxis(identifier, 3, manual_input.r_axis.y);
 }
 
 } // namespace InputCommon::TasInput

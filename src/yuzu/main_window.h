@@ -53,6 +53,7 @@ class GRenderWindow;
 class LoadingScreen;
 class OverlayDialog;
 class ControllerDialog;
+class TasWindow;
 class QLabel;
 class MultiplayerState;
 class QPushButton;
@@ -399,6 +400,9 @@ private slots:
     void OnTasStartStop();
     void OnTasRecord();
     void OnTasReset();
+    void OnTasFrameAdvance();
+    void OnTasEnableToggled(bool checked);
+    void OnTasSpeedSelected(QAction* action);
     void OnToggleGraphicsAPI();
     void OnToggleDockedMode();
     void OnToggleGpuAccuracy();
@@ -414,7 +418,6 @@ private slots:
     void OnInstallFirmware();
     void OnInstallFirmwareFromZIP();
     void OnInstallDecryptionKeys();
-    void OnWhatsNew();
     void OnAbout();
     void OnEdenDependencies();
     void OnApplyRecommendedSettings();
@@ -428,6 +431,8 @@ private slots:
 #endif
     void OnGameListRefresh();
     void InitializeHotkeys();
+    void InitializeTasMenu();
+    void SyncSpeedMenuChecked();
     void ToggleFullscreen();
     bool UsingExclusiveFullscreen();
     void ShowFullscreen();
@@ -469,7 +474,6 @@ private slots:
 
 private:
     void OnGameListNxTool(const std::string& game_path, void (NxTools::*tool)(const std::string&));
-    void OnGameListEditNxMetadata(const std::string& game_path);
     void RemovePlayTimeData(u64 program_id);
     bool SelectRomFSDumpTarget(const FileSys::ContentProvider&, u64 program_id,
                                u64* selected_title_id, u8* selected_content_record_type);
@@ -487,7 +491,6 @@ private:
     void UpdateStatusBar();
     void UpdateGPUAccuracyButton();
     void UpdateStatusButtons();
-    void UpdateMenuIcons();
     void UpdateUISettings();
     void UpdateInputDrivers();
     void HideMouseCursor();
@@ -607,6 +610,12 @@ private:
     // Debugger panes
     ControllerDialog* controller_dialog = nullptr;
 
+    // TAS input panel and Tools -> TAS menu additions
+    TasWindow* tas_window = nullptr;
+    QAction* action_tas_enable = nullptr;
+    QAction* action_tas_frame_advance = nullptr;
+    QActionGroup* tas_speed_actions = nullptr;
+
     QAction* actions_recent_files[max_recent_files_item];
 
     // stores default icon theme search paths for the platform
@@ -624,7 +633,6 @@ private:
     bool nup_running{};
     QPointer<ShaderWarmDialog> shader_warm_dialog;
     NxTools* nx_tools = nullptr;
-    bool nx_metadata_write_in_progress = false;
     std::string nup_source_path;
 
     // Last game booted, used for multi-process apps

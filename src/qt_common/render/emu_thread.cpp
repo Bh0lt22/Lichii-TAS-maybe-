@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <chrono>
+#include <thread>
+
 #include <qdebug.h>
 #include "core/core.h"
 #include "core/cpu_manager.h"
@@ -52,7 +55,7 @@ void EmuThread::run() {
             m_stopped.Reset();
 
             m_should_run_cv.wait(lk, stop_token, [&] {
-                return !m_should_run || m_pending_shader_cache_title.has_value();
+                return !m_should_run || m_pending_shader_cache_title.has_value() || m_step_frame;
             });
 
             if (m_should_run && m_pending_shader_cache_title.has_value()) {
@@ -62,6 +65,31 @@ void EmuThread::run() {
                 lk.unlock();
                 this->ReloadDiskShaderCache(program_id);
                 lk.lock();
+            }
+
+            if (m_step_frame) {
+                lk.unlock();
+
+                // Wait for exactly one new presented frame (with a timeout so a
+                // missed present can never hang the thread), then pause again.
+                const u64 target_present =
+                    Core::g_nx2_present_count.load(std::memory_order_relaxed) + 1;
+                const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+                while (Core::g_nx2_present_count.load(std::memory_order_relaxed) <
+                       target_present) {
+                    if (stop_token.stop_requested() ||
+                        std::chrono::steady_clock::now() >= deadline) {
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::microseconds(500));
+                }
+
+                lk.lock();
+                m_step_frame = false;
+                if (!stop_token.stop_requested()) {
+                    // Fall back into the paused branch of this loop.
+                    m_should_run = false;
+                }
             }
         } else {
             QtCommon::system->Pause();
