@@ -10,8 +10,6 @@
 
 class QAction;
 class QCheckBox;
-class QGridLayout;
-class QGroupBox;
 class QHideEvent;
 class QLabel;
 class QShowEvent;

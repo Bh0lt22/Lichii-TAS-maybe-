@@ -229,11 +229,11 @@ private:
     bool is_recording{false};
     bool is_running{false};
     bool needs_reset{false};
-    bool manual_mode{false};
     std::array<std::vector<TASCommand>, PLAYER_NUMBER> commands{};
     std::vector<TASCommand> record_commands{};
     size_t current_command{0};
     TASCommand last_input{}; // only used for recording
+    bool manual_mode{false};
     TASCommand manual_input{}; // manual input of player 1 (TAS Input Panel)
 };
 } // namespace InputCommon::TasInput

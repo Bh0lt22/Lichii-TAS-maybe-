@@ -55,7 +55,8 @@ void EmuThread::run() {
             m_stopped.Reset();
 
             m_should_run_cv.wait(lk, stop_token, [&] {
-                return !m_should_run || m_pending_shader_cache_title.has_value() || m_step_frame;
+                return !m_should_run || m_pending_shader_cache_title.has_value() ||
+                       m_step_frame;
             });
 
             if (m_should_run && m_pending_shader_cache_title.has_value()) {

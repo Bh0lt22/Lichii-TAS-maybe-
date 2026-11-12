@@ -3,6 +3,7 @@
 
 #include <QAction>
 #include <QCheckBox>
+#include <QFont>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -12,6 +13,7 @@
 #include <QShowEvent>
 #include <QHideEvent>
 #include <QSlider>
+#include <QStringList>
 #include <QTimer>
 #include <QVBoxLayout>
 
@@ -155,8 +157,7 @@ TasWindow::TasWindow(std::shared_ptr<InputCommon::InputSubsystem> input_subsyste
                         OnAxisChanged(axis, value);
                     });
         }
-        auto* reset_button =
-            new QPushButton(tr("Recentre"), stick_group);
+        auto* reset_button = new QPushButton(tr("Recentre"), stick_group);
         connect(reset_button, &QPushButton::clicked, this, [this, stick] { ResetStick(stick); });
         stick_layout->addWidget(reset_button);
         stick_group->setLayout(stick_layout);
@@ -221,24 +222,24 @@ void TasWindow::UpdateUi() {
 
     QString status;
     if (!Settings::values.tas_enable.GetValue()) {
-        status = tr("TAS is disabled — enable it in Tools → TAS → Enable TAS");
+        status = tr("TAS is disabled - enable it in Tools > TAS > Enable TAS");
     } else if (tas->GetManualMode()) {
         if (state == InputCommon::TasInput::TasState::Recording) {
-            status = tr("MANUAL — recording frame %1").arg(lengths[0]);
+            status = tr("MANUAL - recording frame %1").arg(lengths[0]);
         } else {
             status = tr("MANUAL INPUT ACTIVE");
         }
     } else {
         switch (state) {
         case InputCommon::TasInput::TasState::Recording:
-            status = tr("RECORDING — frame %1").arg(lengths[0]);
+            status = tr("RECORDING - frame %1").arg(lengths[0]);
             break;
         case InputCommon::TasInput::TasState::Running:
-            status = tr("PLAYING — frame %1 / %2").arg(current_frame).arg(lengths[0]);
+            status = tr("PLAYING - frame %1 / %2").arg(current_frame).arg(lengths[0]);
             break;
         case InputCommon::TasInput::TasState::Stopped:
         default:
-            status = tr("IDLE — script length: %1 frames").arg(lengths[0]);
+            status = tr("IDLE - script length: %1 frames").arg(lengths[0]);
             break;
         }
     }
@@ -246,8 +247,7 @@ void TasWindow::UpdateUi() {
 
     // Current input view: manual input in manual mode, otherwise the last
     // input sampled from the physical controller.
-    const auto command =
-        tas->GetManualMode() ? tas->GetManualInput() : tas->GetLastInput();
+    const auto command = tas->GetManualMode() ? tas->GetManualInput() : tas->GetLastInput();
     QStringList pressed_buttons;
     for (const auto& descriptor : tas_button_descriptors) {
         if ((command.buttons & (1ULL << descriptor.bit)) != 0) {
